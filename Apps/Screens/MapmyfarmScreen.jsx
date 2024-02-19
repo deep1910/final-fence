@@ -1,0 +1,199 @@
+import { View, Text, Image, Modal, FlatList, StyleSheet, TextInput, TouchableOpacity, Button } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import { Ionicons } from '@expo/vector-icons'
+import { collection, addDoc, setDoc ,doc, getDocs , docSnap} from "firebase/firestore"
+import { firedb } from '../../firebaseConfig';
+import { client } from '../../Constants/KindConfig';
+
+export default function MapmyfarmScreen({ navigation }) {
+
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedValue, setSelectedValue] = useState("");
+    const [addFieldvalue, setAddFieldvalue] = useState(false);
+  
+    const [data, setData] = useState([]);
+
+    const [dataelement, setDataelement] = useState("");
+   
+
+    const userdetail = client.getUserDetails();
+   
+    
+    useEffect(() => {
+        async function fetchData() {
+            
+        
+            const querySnapshot = await getDocs(collection(firedb,"users", (await userdetail).given_name, "fields"));
+       
+            let tempdata = []
+            querySnapshot.forEach((doc) => {
+                tempdata.push(doc.id)
+            //     console.log("Gello");
+            //   console.log(doc.id);
+            // console.log(data);
+            //   setData([...data,doc.id])
+            //   console.log(data); // This will log the name of each document
+            });
+
+            tempdata.forEach((eachdata)=>{
+                setData([...data,eachdata])
+                data.push(eachdata)
+            })
+
+            console.log(data);
+
+            // console.log(tempdata);
+            // console.log(docSnap);
+            
+            // if (docSnap.exists()) {
+            //     console.log(docSnap)
+                // console.log("Document data:", docSnap);
+            // } else {
+            //     // docSnap.data() will be undefined in this case
+                // console.log("No such document!");
+            // }
+
+
+        }
+        fetchData()
+   
+}, [])
+
+    const renderItem = ({ item }) => (
+        <TouchableOpacity onPress={() => {
+            setSelectedValue(item);
+            setModalVisible(false);
+        }}>
+            <Text style={{ marginBottom: 5, fontSize: 20, color: 'yellow' }}>{item}</Text>
+        </TouchableOpacity>
+    );
+
+
+    const addField = async () => {
+        console.log('Data');
+        setAddFieldvalue(true);
+        if (dataelement != "") {
+            // setData([...data, dataelement])
+            // return
+            // const citiesRef = collection(firedb, "cities");
+            // console.log('Data');
+            const userRef = collection(firedb, "users", (await userdetail).given_name, "fields");
+        
+            try {
+                // const userRef = await addDoc(collection(firedb, "users", (await userdetail).given_name, "fields"), {
+                //     fieldname: dataelement
+                // });
+                
+                 
+               await setDoc(doc(userRef, dataelement ),{
+                    fieldname: dataelement,
+                 
+                  
+               })
+               data.push(dataelement)
+
+                console.log("Document written with ID: ", userRef.id);
+            } catch (e) {
+                console.error("Error adding document: ", e);
+            }
+
+            console.log(data);
+        }
+        setDataelement("")
+        // setModalVisible(false)
+
+    }
+
+
+
+    return (
+        <View style={{ marginTop: 40 }}>
+            <View style={{ padding: 20, alignItems: 'center', borderWidth: 1, marginHorizontal: 20 }} >
+
+                <Image style={{ height: 100, width: 100, marginBottom: 10 }}
+                    source={{ uri: "https://th.bing.com/th/id/OIP.G0TZQE-WfrNupua_JJeB6QHaFj?rs=1&pid=ImgDetMain" }} />
+                <Text style={{ marginBottom: 10, fontSize: 20 }}>Measure my field</Text>
+                <Text style={{ marginBottom: 20 }}>Calculate your field size accurately</Text>
+                <View style={{ display: "flex" }}>
+                    <View>
+                        <Modal
+                            animationType="slide"
+                            transparent={true}
+                            presentationStyle="overFullScreen"
+                            visible={modalVisible}
+                            onRequestClose={() => {
+                                setModalVisible(!modalVisible);
+                            }}
+                        >
+                            <View style={styles.modalContainer}>
+                                <View style={styles.modalView}>
+                                    <Text style={{ fontSize: 20, color: 'white', marginBottom: 20 }}>Select Field</Text>
+                                    <FlatList
+                                        style={{ marginBottom: 20, }}
+                                        data={data}
+                                        renderItem={renderItem}
+                                        keyExtractor={item => item}
+                                    />
+                                    <TouchableOpacity onPress={() => addField()}>
+                                        {addFieldvalue && <TextInput placeholder="Enter field name" style={{ padding: 5, width: 200, fontSize: 20, color: 'white', marginBottom: 20, backgroundColor: 'rgba(135, 207, 145, 0.8)' }} value={dataelement} onChangeText={(text) => setDataelement(text)} />}
+                                        <View style={{ display: 'flex', gap: 10, flexDirection: 'row', marginBottom: 30, alignItems: 'center' }}>
+                                            <Ionicons name="add" size={24} color="white" />
+                                            <Text style={{ fontSize: 20, color: 'white' }}>Add Field</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </Modal>
+                        <TouchableOpacity style={{ display: 'flex', gap: 9, flexDirection: 'row', borderWidth: 2, paddingHorizontal: 50, paddingVertical: 20, alignItems: 'center' }} onPress={() => setModalVisible(true)}>
+                            <Text>Select the Field</Text>
+                            <Ionicons name="caret-down-outline" />
+                        </TouchableOpacity>
+
+                        {selectedValue &&
+                            <View style={{ marginTop: 20, alignItems: 'center' }}>
+                                <Text style={{ fontSize: 20, marginBottom: 10 }}>{selectedValue}</Text>
+                                <Button title="Measure" onPress={() => navigation.navigate('FarmScreen', {selectedValue: selectedValue})} />
+                            </View>}
+                    </View>
+                </View>
+            </View>
+        </View>
+    )
+}
+
+
+
+const styles = StyleSheet.create({
+    // container: {
+    //     //   flex:1,
+    //     // justifyContent: 'center',
+    //     alignItems: 'center',
+    //     margin: 10,
+    //     borderWidth: 1,
+    //     borderRadius: 3,
+    //     borderColor: 'black',
+
+
+    //     //   opacity:1
+    //     height: 600,
+    // },
+    modalView: {
+        backgroundColor: "grey",
+        width: '100%',
+        height: 'auto',
+        // backgroundColor: "white",
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        paddingLeft: 30,
+        paddingTop: 10,
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        height: 'auto'
+    },
+
+
+}
+)
